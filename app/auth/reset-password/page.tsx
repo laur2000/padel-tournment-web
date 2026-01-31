@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -14,7 +15,7 @@ import Alert from '@mui/material/Alert';
 
 import { resetPassword } from '@/lib/actions/password-reset';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -154,5 +155,13 @@ export default function ResetPasswordPage() {
         </Paper>
       </Box>
     </Container>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>Loading...</Box>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

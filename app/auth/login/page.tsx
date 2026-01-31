@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -16,7 +17,7 @@ import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import GoogleIcon from '@mui/icons-material/Google';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
@@ -142,5 +143,13 @@ export default function LoginPage() {
         </Paper>
       </Box>
     </Container>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>Loading...</Box>}>
+      <LoginForm />
+    </Suspense>
   );
 }
