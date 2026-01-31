@@ -216,6 +216,31 @@ describe('Actions: leaveMeeting', () => {
 
         await expect(leaveMeeting(mockMeetingId)).rejects.toThrow('Cannot leave: match is locked');
     });
+
+    it('should prevent leaving if matchmaking is already generated', async () => {
+        const futureDate = new Date();
+        futureDate.setHours(futureDate.getHours() + 1);
+
+        (prisma.meeting.findUnique as any).mockResolvedValue({
+            id: mockMeetingId,
+            startTime: futureDate,
+            matchmakingGeneratedAt: new Date() // Matchmaking done
+        });
+
+        await expect(leaveMeeting(mockMeetingId)).rejects.toThrow('Cannot leave: matchmaking has already been generated');
+    });
+
+    it('should prevent leaving if game has started', async () => {
+        const pastDate = new Date();
+        pastDate.setMinutes(pastDate.getMinutes() - 1); // Started 1 min ago
+
+        (prisma.meeting.findUnique as any).mockResolvedValue({
+            id: mockMeetingId,
+            startTime: pastDate
+        });
+
+        await expect(leaveMeeting(mockMeetingId)).rejects.toThrow('Cannot leave: meeting has already started');
+    });
 });
 
 describe('Actions: confirmAttendance', () => {

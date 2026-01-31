@@ -176,6 +176,16 @@ export async function leaveMeeting(meetingId: string) {
       if (!meeting) throw new Error("Meeting not found");
 
       const now = new Date();
+      // Cannot leave if meeting has already started
+      if (now >= meeting.startTime) {
+        throw new Error("Cannot leave: meeting has already started.");
+      }
+      
+      // Cannot leave if matchmaking has been generated
+      if (meeting.matchmakingGeneratedAt) {
+        throw new Error("Cannot leave: matchmaking has already been generated.");
+      }
+
       const minutesUntilStart = (meeting.startTime.getTime() - now.getTime()) / (1000 * 60);
 
       // "once all players are confirmed and there is less than 15min before the match"
