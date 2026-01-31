@@ -143,6 +143,7 @@ export default async function MeetingDetailPage(props: PageProps) {
                     isConfirmed={isConfirmed}
                     canConfirm={canConfirm}
                     isLocked={isLocked}
+                    isAdmin={!!session.user.is_admin}
                 />
                 {userStatus === "WAITLISTED" && (
                     <div className="mt-2 text-yellow-700 bg-yellow-50 p-3 rounded">

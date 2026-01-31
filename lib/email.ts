@@ -22,7 +22,6 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   const resetLink = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`;
 
   try {
-    debugger;
     await transporter.sendMail({
       from:
         process.env.SMTP_FROM ||
@@ -38,7 +37,6 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     `,
     });
   } catch (error) {
-    debugger;
     console.error("Error sending password reset email:", error);
     throw error;
   }
@@ -111,5 +109,54 @@ export async function sendReminderEmail(
     });
   } catch (error) {
     console.error("Error sending reminder email:", error);
+  }
+}
+
+export async function sendMatchmakingNotification(
+  email: string,
+  place: string,
+  startTime: Date,
+  matches: Array<{
+    courtNumber: number;
+    teamA: string[];
+    teamB: string[];
+  }>
+) {
+  const dateStr = new Date(startTime).toLocaleString("es-ES", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: "Europe/Madrid",
+  });
+
+  const matchesHtml = matches
+    .map(
+      (m) => `
+      <div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px; background-color: #f9f9f9;">
+        <h3 style="margin-top: 0; color: #333;">Pista ${m.courtNumber}</h3>
+        <p style="margin: 5px 0;"><strong>Equipo A:</strong> ${m.teamA.join(" y ")}</p>
+        <p style="margin: 5px 0; font-weight: bold; text-align: center;">VS</p>
+        <p style="margin: 5px 0;"><strong>Equipo B:</strong> ${m.teamB.join(" y ")}</p>
+      </div>
+    `
+    )
+    .join("");
+
+  try {
+    await transporter.sendMail({
+      from:
+        process.env.SMTP_FROM ||
+        '"Torneo de Padel" <bogdan.lorenzo11@gmail.com>',
+      to: email,
+      subject: "¡Partidos generados! Tu pista y equipo",
+      html: `
+        <h1>Partidos Confirmados</h1>
+        <p>El partido en <strong>${place}</strong> el <strong>${dateStr}</strong> ha sido cerrado.</p>
+        <p>Aquí tienes la distribución de pistas y equipos:</p>
+        ${matchesHtml}
+        <p>¡Buena suerte y a disfrutar!</p>
+      `,
+    });
+  } catch (error) {
+    console.error("Error sending matchmaking email:", error);
   }
 }

@@ -58,8 +58,6 @@ export default function CreateMeetingForm() {
 
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    console.log("Submitting form...");
-    debugger
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);

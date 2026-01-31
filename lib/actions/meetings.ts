@@ -36,6 +36,21 @@ export async function createMeeting(data: {
   redirect("/meetings");
 }
 
+export async function deleteMeeting(meetingId: string) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.is_admin) {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.meeting.delete({
+    where: { id: meetingId },
+  });
+
+  revalidatePath("/meetings");
+  redirect("/meetings");
+}
+
 export async function joinMeeting(meetingId: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

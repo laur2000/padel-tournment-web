@@ -5,14 +5,11 @@ import { redirect } from "next/navigation";
 import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemText from "@mui/material/ListItemText";
 import Divider from "@mui/material/Divider";
 import Chip from "@mui/material/Chip";
-import Grid from "@mui/material/Grid";
 
 import ProfileDetails from "./ProfileDetails";
+import MatchesList from "./MatchesList";
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
@@ -60,40 +57,14 @@ export default async function ProfilePage() {
           Mis Partidos
         </Typography>
 
-        {user.participations.length === 0 ? (
-          <Typography color="text.secondary">Aún no te has unido a ningún partido.</Typography>
-        ) : (
-          <List>
-            {user.participations.map((part) => {
-              const statusMap: Record<string, string> = {
-                "JOINED": "UNIDO",
-                "WAITLISTED": "LISTA DE ESPERA",
-                "LEFT": "ABANDONÓ",
-                "REMOVED_BY_TRUNCATION": "ELIMINADO POR TRUNCAMIENTO"
-              };
-
-              return (
-              <ListItem key={part.id} divider>
-                <ListItemText
-                  primary={part.meeting.place}
-                  secondary={
-                    <>
-                      <Typography variant="body2" component="span">
-                        {new Date(part.meeting.startTime).toLocaleString("es-ES", {
-                          dateStyle: "full",
-                          timeStyle: "short",
-                          timeZone: "Europe/Madrid",
-                        })}
-                      </Typography>
-                      <br />
-                      Estado: <strong>{statusMap[part.status] || part.status}</strong>
-                    </>
-                  }
-                />
-              </ListItem>
-            )})}
-          </List>
-        )}
+        <MatchesList matches={user.participations.map(p => ({
+            id: p.id,
+            meetingId: p.meeting.id,
+            place: p.meeting.place,
+            startTime: p.meeting.startTime.toISOString(),
+            status: p.status,
+            confirmed: !!p.confirmedAt
+        }))} />
       </Paper>
     </Container>
   );

@@ -2,8 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
 // Helper to format date for Madrid (approximate using Intl or date-fns if tz needed, 
 // strictly speaking date-fns doesn't do TZ without date-fns-tz, 
