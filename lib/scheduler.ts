@@ -47,7 +47,7 @@ export async function processReminders() {
 
 export async function processMeetingsFinalization() {
   const now = new Date();
-  const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
+  const fifteenMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
 
   const meetingsToFinalize = await prisma.meeting.findMany({
     where: {

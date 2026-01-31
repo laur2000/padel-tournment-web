@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import MeetingActions from "./MeetingActions";
 import { ParticipationStatus, TeamSide } from "@prisma/client";
 import Link from "next/link";
-import MapViewer from "@/components/MapViewer";
+import LocationToggle from "./LocationToggle";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -103,7 +103,7 @@ export default async function MeetingDetailPage(props: PageProps) {
   const isConfirmed = !!userParticipation?.confirmedAt;
 
   return (
-    <div className="container mx-auto py-8 max-w-4xl">
+    <div className="container mx-auto max-w-4xl">
       <div className="mb-6">
         <Link href="/meetings" className="text-blue-600 hover:underline">
           &larr; Volver a partidos
@@ -130,9 +130,7 @@ export default async function MeetingDetailPage(props: PageProps) {
         </div>
 
         {meeting.latitude && meeting.longitude && (
-          <div className="mb-6 h-[300px] w-full border border-gray-200 rounded-lg overflow-hidden">
-             <MapViewer lat={meeting.latitude} lng={meeting.longitude} />
-          </div>
+            <LocationToggle latitude={meeting.latitude} longitude={meeting.longitude} />
         )}
 
         {session?.user ? (
@@ -143,7 +141,7 @@ export default async function MeetingDetailPage(props: PageProps) {
                     isConfirmed={isConfirmed}
                     canConfirm={canConfirm}
                     isLocked={isLocked}
-                    isAdmin={!!session.user.is_admin}
+                    isAdmin={session.user.is_admin}
                 />
                 {userStatus === "WAITLISTED" && (
                     <div className="mt-2 text-yellow-700 bg-yellow-50 p-3 rounded">
@@ -159,11 +157,11 @@ export default async function MeetingDetailPage(props: PageProps) {
       </div>
 
       {meeting.matchmakingGeneratedAt && meeting.matches.length > 0 && (
-        <div className="mb-8 p-6 bg-slate-50 border border-slate-200 rounded-lg">
+        <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4 text-slate-800">Partidos Generados</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {meeting.matches.map((match) => (
-              <div key={match.id} className="bg-white p-4 rounded shadow border border-gray-100">
+              <div key={match.id} className="bg-white min-w-[336px] p-4 rounded shadow border border-gray-100">
                 <h3 className="font-bold text-lg mb-3 text-center border-b pb-2">
                   Pista {match.courtNumber}
                 </h3>
@@ -172,22 +170,28 @@ export default async function MeetingDetailPage(props: PageProps) {
                     <div className="text-xs text-blue-800 font-bold mb-1 uppercase">Equipo A</div>
                     {match.teams
                       .find((t) => t.side === TeamSide.A)
-                      ?.members.map((m) => (
-                        <div key={m.id} className="text-sm truncate">
-                          {m.user.name || "Usuario"}
-                        </div>
-                      ))}
+                      ?.members.map((m) => {
+                        const displayName = m.user.name || "Usuario";
+                        return (
+                          <div key={m.id} className="text-sm truncate" title={displayName}>
+                            {displayName.length > 16 ? `${displayName.slice(0, 16)}...` : displayName}
+                          </div>
+                        );
+                      })}
                   </div>
                   <div className="font-bold text-gray-400">VS</div>
                   <div className="flex-1 text-center bg-red-50 p-2 rounded">
                     <div className="text-xs text-red-800 font-bold mb-1 uppercase">Equipo B</div>
                     {match.teams
                       .find((t) => t.side === TeamSide.B)
-                      ?.members.map((m) => (
-                        <div key={m.id} className="text-sm truncate">
-                          {m.user.name || "Usuario"}
-                        </div>
-                      ))}
+                      ?.members.map((m) => {
+                        const displayName = m.user.name || "Usuario";
+                        return (
+                          <div key={m.id} className="text-sm truncate" title={displayName}>
+                            {displayName.length > 16 ? `${displayName.slice(0, 16)}...` : displayName}
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
               </div>
