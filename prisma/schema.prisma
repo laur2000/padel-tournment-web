@@ -81,6 +81,8 @@ enum ParticipationStatus {
 model Meeting {
   id                     String    @id @default(cuid())
   place                  String
+  latitude               Float?
+  longitude              Float?
   startTime              DateTime
   numCourts              Int
   autoConfirmProcessedAt DateTime?
@@ -104,6 +106,7 @@ model Participation {
   leftAt       DateTime?
   removedAt    DateTime?
   confirmedAt  DateTime?
+  reminderSent Boolean             @default(false)
 
   meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)

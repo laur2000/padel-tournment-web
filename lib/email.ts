@@ -78,3 +78,38 @@ export async function sendWaitlistPromotionEmail(
     console.error("Error sending promotion email:", error);
   }
 }
+
+export async function sendReminderEmail(
+  email: string,
+  meetingId: string,
+  place: string,
+  startTime: Date
+) {
+  const meetingLink = `${process.env.NEXTAUTH_URL}/meetings/${meetingId}`;
+
+  const dateStr = new Date(startTime).toLocaleString("es-ES", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: "Europe/Madrid",
+  });
+
+  try {
+    await transporter.sendMail({
+      from:
+        process.env.SMTP_FROM ||
+        '"Torneo de Padel" <bogdan.lorenzo11@gmail.com>',
+      to: email,
+      subject: "Recordatorio: Confirma tu asistencia",
+      html: `
+        <h1>¡Hola!</h1>
+        <p>Tienes un partido pendiente de confirmación en <strong>${place}</strong> el <strong>${dateStr}</strong>.</p>
+        <p>Recuerda que debes confirmar tu asistencia para asegurar tu plaza.</p>
+        <p>Por favor, entra al siguiente enlace para confirmar:</p>
+        <p><a href="${meetingLink}">Confirmar Asistencia</a></p>
+        <p>¡Nos vemos en la pista!</p>
+      `,
+    });
+  } catch (error) {
+    console.error("Error sending reminder email:", error);
+  }
+}

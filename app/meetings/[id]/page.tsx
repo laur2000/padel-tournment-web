@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import MeetingActions from "./MeetingActions";
 import { ParticipationStatus, TeamSide } from "@prisma/client";
 import Link from "next/link";
+import MapViewer from "@/components/MapViewer";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -87,9 +88,17 @@ export default async function MeetingDetailPage(props: PageProps) {
   }
 
   // Confirm logic: Allow confirm if joined and not confirmed. 
-  // Interpreting "15m_to_start" as: Allow confirmation close to start time? 
-  // For now enabled if joined and not confirmed.
-  const canConfirm = true; 
+  // "only be able to confirm match in the 24h interval before the match starts"
+  
+  const now = new Date();
+  const startTime = new Date(meeting.startTime);
+  const diffHours = (startTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+  const canConfirm = diffHours <= 24 && diffHours >= 0;
+  
+  const minutesUntilStart = diffHours * 60;
+  const allConfirmed = joinedParticipants.length > 0 && joinedParticipants.every(p => p.confirmedAt);
+  const isLocked = minutesUntilStart < 15 && minutesUntilStart > 0 && allConfirmed;
 
   const isConfirmed = !!userParticipation?.confirmedAt;
 
@@ -120,6 +129,12 @@ export default async function MeetingDetailPage(props: PageProps) {
           </div>
         </div>
 
+        {meeting.latitude && meeting.longitude && (
+          <div className="mb-6 h-[300px] w-full border border-gray-200 rounded-lg overflow-hidden">
+             <MapViewer lat={meeting.latitude} lng={meeting.longitude} />
+          </div>
+        )}
+
         {session?.user ? (
             <div className="border-t pt-6">
                 <MeetingActions 
@@ -127,6 +142,7 @@ export default async function MeetingDetailPage(props: PageProps) {
                     userStatus={userStatus}
                     isConfirmed={isConfirmed}
                     canConfirm={canConfirm}
+                    isLocked={isLocked}
                 />
                 {userStatus === "WAITLISTED" && (
                     <div className="mt-2 text-yellow-700 bg-yellow-50 p-3 rounded">

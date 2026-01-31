@@ -12,6 +12,8 @@ export async function createMeeting(data: {
   place: string;
   startTime: Date;
   numCourts: number;
+  latitude?: number;
+  longitude?: number;
 }) {
   const session = await getServerSession(authOptions);
 
@@ -24,6 +26,8 @@ export async function createMeeting(data: {
       place: data.place,
       startTime: data.startTime,
       numCourts: data.numCourts,
+      latitude: data.latitude,
+      longitude: data.longitude,
       createdByUserId: session.user.id,
     },
   });
@@ -152,6 +156,24 @@ export async function leaveMeeting(meetingId: string) {
 
   await prisma.$transaction(
     async (tx) => {
+      // 0. Check Leave Constraints
+      const meeting = await tx.meeting.findUnique({ where: { id: meetingId } });
+      if (!meeting) throw new Error("Meeting not found");
+
+      const now = new Date();
+      const minutesUntilStart = (meeting.startTime.getTime() - now.getTime()) / (1000 * 60);
+
+      // "once all players are confirmed and there is less than 15min before the match"
+      if (minutesUntilStart < 15 && minutesUntilStart > 0) {
+        const joinedParticipants = await tx.participation.findMany({
+          where: { meetingId, status: ParticipationStatus.JOINED },
+        });
+        const allConfirmed = joinedParticipants.every((p) => p.confirmedAt);
+        if (allConfirmed) {
+            throw new Error("Cannot leave: match is locked (less than 15m and all confirmed).");
+        }
+      }
+
       const participation = await tx.participation.findUnique({
         where: {
           meetingId_userId: {
@@ -246,6 +268,20 @@ export async function confirmAttendance(meetingId: string) {
     throw new Error("Unauthorized");
   }
   const userId = session.user.id;
+
+  const meeting = await prisma.meeting.findUnique({ where: { id: meetingId } });
+  if (!meeting) throw new Error("Meeting not found");
+
+  const now = new Date();
+  const timeDiff = meeting.startTime.getTime() - now.getTime();
+  const hoursUntilStart = timeDiff / (1000 * 60 * 60);
+
+  if (hoursUntilStart > 24) {
+     throw new Error("Confirmation only available 24h before match");
+  }
+  if (timeDiff < 0) {
+      throw new Error("Match already started");
+  }
 
   await prisma.participation.updateMany({
     where: {

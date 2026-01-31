@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateMatches } from "@/lib/matchmaking";
 import { ParticipationStatus } from "@prisma/client";
+import { sendReminderEmail } from "@/lib/email";
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -10,6 +11,49 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date();
+
+  // --- 0. Reminder Emails ---
+  // Check all matches < 24h remaining
+  const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  
+  const reminderMeetings = await prisma.meeting.findMany({
+    where: {
+      startTime: {
+        gte: now,
+        lte: twentyFourHoursFromNow,
+      },
+    },
+    include: {
+      participations: {
+        where: {
+          status: ParticipationStatus.JOINED,
+          confirmedAt: null,
+          reminderSent: false,
+        },
+        include: { user: true },
+      },
+    },
+  });
+
+  for (const meeting of reminderMeetings) {
+    for (const p of meeting.participations) {
+      if (p.user.email) {
+        await sendReminderEmail(
+          p.user.email,
+          meeting.id,
+          meeting.place,
+          meeting.startTime
+        );
+        // Mark as sent
+        await prisma.participation.update({
+          where: { id: p.id },
+          data: { reminderSent: true },
+        });
+      }
+    }
+  }
+
+  // --- 1. Auto-Confirm / Truncate / Matchmake (Existing Logic) ---
   const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
 
   // Find target meetings
