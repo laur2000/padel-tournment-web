@@ -40,88 +40,96 @@ export async function joinMeeting(meetingId: string) {
   const userId = session.user.id;
 
   // Transaction for concurrency safety
-  const result = await prisma.$transaction(async (tx) => {
-    // 1. Get Meeting Info
-    const meeting = await tx.meeting.findUnique({
-      where: { id: meetingId },
-    });
-    if (!meeting) throw new Error("Meeting not found");
+  const result = await prisma.$transaction(
+    async (tx) => {
+      // 1. Get Meeting Info
+      const meeting = await tx.meeting.findUnique({
+        where: { id: meetingId },
+      });
+      if (!meeting) throw new Error("Meeting not found");
 
-    if (meeting.startTime < new Date()) {
-      throw new Error("Cannot join past meetings");
-    }
-
-    const maxParticipants = meeting.numCourts * 4;
-
-    // 2. Count JOINED Participants & Check current user status
-    const joinedCount = await tx.participation.count({
-      where: {
-        meetingId,
-        status: ParticipationStatus.JOINED,
-      },
-    });
-
-    const existingParticipation = await tx.participation.findUnique({
-      where: {
-        meetingId_userId: {
-          meetingId,
-          userId,
-        },
-      },
-    });
-
-    // If user already has a participation entry
-    if (existingParticipation) {
-      if (
-        existingParticipation.status === ParticipationStatus.JOINED ||
-        existingParticipation.status === ParticipationStatus.WAITLISTED
-      ) {
-        return { status: existingParticipation.status, message: "Already participating" };
+      if (meeting.startTime < new Date()) {
+        throw new Error("Cannot join past meetings");
       }
-      // If they were LEFT or REMOVED, we re-evaluate
-    }
 
-    let newStatus: ParticipationStatus = ParticipationStatus.WAITLISTED;
-    let joinedAt: Date | null = null;
-    let waitlistedAt: Date | null = null;
+      const maxParticipants = meeting.numCourts * 4;
 
-    if (joinedCount < maxParticipants) {
-      newStatus = ParticipationStatus.JOINED;
-      joinedAt = new Date();
-    } else {
-      newStatus = ParticipationStatus.WAITLISTED;
-      waitlistedAt = new Date();
-    }
+      // 2. Count JOINED Participants & Check current user status
+      const joinedCount = await tx.participation.count({
+        where: {
+          meetingId,
+          status: ParticipationStatus.JOINED,
+        },
+      });
 
-    // Upsert Participation
-    await tx.participation.upsert({
-      where: {
-        meetingId_userId: {
+      const existingParticipation = await tx.participation.findUnique({
+        where: {
+          meetingId_userId: {
+            meetingId,
+            userId,
+          },
+        },
+      });
+
+      // If user already has a participation entry
+      if (existingParticipation) {
+        if (
+          existingParticipation.status === ParticipationStatus.JOINED ||
+          existingParticipation.status === ParticipationStatus.WAITLISTED
+        ) {
+          return {
+            status: existingParticipation.status,
+            message: "Already participating",
+          };
+        }
+        // If they were LEFT or REMOVED, we re-evaluate
+      }
+
+      let newStatus: ParticipationStatus = ParticipationStatus.WAITLISTED;
+      let joinedAt: Date | null = null;
+      let waitlistedAt: Date | null = null;
+
+      if (joinedCount < maxParticipants) {
+        newStatus = ParticipationStatus.JOINED;
+        joinedAt = new Date();
+      } else {
+        newStatus = ParticipationStatus.WAITLISTED;
+        waitlistedAt = new Date();
+      }
+
+      // Upsert Participation
+      await tx.participation.upsert({
+        where: {
+          meetingId_userId: {
+            meetingId,
+            userId,
+          },
+        },
+        update: {
+          status: newStatus,
+          joinedAt:
+            newStatus === ParticipationStatus.JOINED ? new Date() : null,
+          waitlistedAt:
+            newStatus === ParticipationStatus.WAITLISTED ? new Date() : null,
+          leftAt: null,
+          removedAt: null,
+          confirmedAt: null, // Reset confirmation on re-join
+        },
+        create: {
           meetingId,
           userId,
+          status: newStatus,
+          joinedAt: joinedAt,
+          waitlistedAt: waitlistedAt,
         },
-      },
-      update: {
-        status: newStatus,
-        joinedAt: newStatus === ParticipationStatus.JOINED ? new Date() : null,
-        waitlistedAt: newStatus === ParticipationStatus.WAITLISTED ? new Date() : null,
-        leftAt: null,
-        removedAt: null,
-        confirmedAt: null, // Reset confirmation on re-join
-      },
-      create: {
-        meetingId,
-        userId,
-        status: newStatus,
-        joinedAt: joinedAt,
-        waitlistedAt: waitlistedAt,
-      },
-    });
+      });
 
-    return { status: newStatus, message: `You are now ${newStatus}` };
-  }, {
-    isolationLevel: 'Serializable' 
-  });
+      return { status: newStatus, message: `You are now ${newStatus}` };
+    },
+    {
+      isolationLevel: "Serializable",
+    },
+  );
 
   revalidatePath(`/meetings/${meetingId}`);
   revalidatePath("/meetings");
@@ -212,16 +220,19 @@ export async function leaveMeeting(meetingId: string) {
     },
     {
       isolationLevel: "Serializable",
-    }
+    },
   );
 
   if (promotionEmailData) {
-    // @ts-ignore
     await sendWaitlistPromotionEmail(
+      // @ts-ignore
       promotionEmailData.email,
+      // @ts-ignore
       promotionEmailData.meetingId,
+      // @ts-ignore
       promotionEmailData.place,
-      promotionEmailData.startTime
+      // @ts-ignore
+      promotionEmailData.startTime,
     );
   }
 

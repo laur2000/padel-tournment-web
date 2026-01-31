@@ -12,6 +12,8 @@ import Divider from "@mui/material/Divider";
 import Chip from "@mui/material/Chip";
 import Grid from "@mui/material/Grid";
 
+import ProfileDetails from "./ProfileDetails";
+
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
 
@@ -45,15 +47,11 @@ export default async function ProfilePage() {
         <Typography variant="h4" gutterBottom>
           Perfil
         </Typography>
-        <Typography variant="body1">
-          <strong>Nombre:</strong> {user.name}
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-          <strong>Correo:</strong> {user.email}
-        </Typography>
+
+        <ProfileDetails user={user} />
         
         {user.is_admin && (
-           <Chip label="Administrador" color="secondary" size="small" sx={{ mt: 1 }} />
+           <Chip label="Administrador" color="secondary" size="small" sx={{ mt: 1, display: 'block', mx: 'auto', width: 'fit-content' }} />
         )}
 
         <Divider sx={{ my: 4 }} />

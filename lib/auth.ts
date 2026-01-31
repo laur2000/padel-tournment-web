@@ -56,9 +56,25 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token) {
+      if (session.user && token.id) {
         session.user.id = token.id as string;
-        session.user.is_admin = token.is_admin as boolean;
+        
+        // Fetch fresh data from DB to ensure image is up-to-date
+        // This avoids storing large base64 images in the JWT cookie
+        try {
+            const dbUser = await prisma.user.findUnique({
+                where: { id: token.id as string },
+                select: { image: true, is_admin: true, name: true }
+            });
+
+            if (dbUser) {
+                session.user.image = dbUser.image;
+                session.user.is_admin = dbUser.is_admin;
+                session.user.name = dbUser.name;
+            }
+        } catch (error) {
+            console.error("Error fetching user session data:", error);
+        }
       }
       return session;
     },
