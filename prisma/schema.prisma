@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRESQL_DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  hashedPassword String?
+  is_admin       Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  accounts            Account[]
+  sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
+  participations      Participation[]
+  matchTeams          MatchTeamMember[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum ParticipationStatus {
+  JOINED
+  WAITLISTED
+  LEFT
+  REMOVED_BY_TRUNCATION
+}
+
+model Meeting {
+  id                     String    @id @default(cuid())
+  place                  String
+  startTime              DateTime
+  numCourts              Int
+  autoConfirmProcessedAt DateTime?
+  truncationAppliedAt    DateTime?
+  matchmakingGeneratedAt DateTime?
+  createdByUserId        String
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  participations Participation[]
+  matches        Match[]
+}
+
+model Participation {
+  id           String              @id @default(cuid())
+  meetingId    String
+  userId       String
+  status       ParticipationStatus
+  joinedAt     DateTime?
+  waitlistedAt DateTime?
+  leftAt       DateTime?
+  removedAt    DateTime?
+  confirmedAt  DateTime?
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+  @@index([meetingId, status])
+  @@index([meetingId, joinedAt])
+  @@index([meetingId, waitlistedAt])
+}
+
+model Match {
+  id           String      @id @default(cuid())
+  meetingId    String
+  courtNumber  Int
+  createdAt    DateTime    @default(now())
+  meeting      Meeting     @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  teams        MatchTeam[]
+}
+
+enum TeamSide {
+  A
+  B
+}
+
+model MatchTeam {
+  id      String            @id @default(cuid())
+  matchId String
+  side    TeamSide
+  match   Match             @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  members MatchTeamMember[]
+}
+
+model MatchTeamMember {
+  id     String    @id @default(cuid())
+  teamId String
+  userId String
+  team   MatchTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+}
