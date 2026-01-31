@@ -48,11 +48,24 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.is_admin = user.is_admin;
+        // Don't store the picture in the token as it might be a large base64 string
+        // We fetch it fresh in the session callback anyway
+        delete token.picture;
+        delete token.image;
       }
+      
+      // Handle session updates (e.g. when updating profile)
+      if (trigger === "update" && session) {
+        // If updating, we might want to update some token fields, but still keep picture out
+        if (session.user) {
+            // ... update logic if needed
+        }
+      }
+      
       return token;
     },
     async session({ session, token }) {
