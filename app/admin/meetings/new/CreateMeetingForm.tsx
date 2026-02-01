@@ -147,7 +147,7 @@ export default function CreateMeetingForm() {
           name="numCourts"
           type="number"
           min="1"
-          max="10"
+          max="20"
           defaultValue="3"
           required
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
