@@ -449,3 +449,51 @@ export async function adminConfirmPlayer(meetingId: string, userId: string) {
 
   revalidatePath(`/meetings/${meetingId}`);
 }
+
+export async function adminAddPlayer(meetingId: string, data: { userId?: string; name: string }) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user?.id || !session.user.is_admin) {
+    throw new Error("Unauthorized");
+  }
+
+  let targetUserId = data.userId;
+
+  if (!targetUserId) {
+    // Create Guest User
+    const newUser = await prisma.user.create({
+      data: {
+        name: data.name,
+        isGuest: true,
+      }
+    });
+    targetUserId = newUser.id;
+  }
+
+  // Add to participation
+  await prisma.participation.upsert({
+    where: {
+        meetingId_userId: {
+            meetingId,
+            userId: targetUserId!
+        }
+    },
+    create: {
+        meetingId,
+        userId: targetUserId!,
+        status: ParticipationStatus.JOINED,
+        joinedAt: new Date(),
+        confirmedAt: new Date(),
+    },
+    update: {
+        status: ParticipationStatus.JOINED,
+        joinedAt: new Date(),
+        confirmedAt: new Date(),
+        leftAt: null,
+        waitlistedAt: null,
+        removedAt: null,
+    }
+  });
+
+  revalidatePath(`/meetings/${meetingId}`);
+}

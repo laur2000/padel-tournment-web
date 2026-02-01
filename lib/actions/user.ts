@@ -25,3 +25,25 @@ export async function updateProfileImage(base64Image: string) {
 
   revalidatePath("/profile");
 }
+
+export async function searchUsers(query: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !session.user.is_admin) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!query || query.length < 2) return [];
+
+  const users = await prisma.user.findMany({
+    where: {
+      OR: [
+        { name: { contains: query, mode: 'insensitive' } },
+        { email: { contains: query, mode: 'insensitive' } }
+      ]
+    },
+    take: 10,
+    select: { id: true, name: true, email: true, image: true, isGuest: true }
+  });
+  
+  return users;
+}

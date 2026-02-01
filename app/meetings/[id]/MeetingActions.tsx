@@ -11,6 +11,7 @@ interface MeetingActionsProps {
   canConfirm: boolean; 
   isLocked: boolean;
   isAdmin: boolean;
+  hasMatchmaking: boolean;
 }
 
 export default function MeetingActions({
@@ -20,6 +21,7 @@ export default function MeetingActions({
   canConfirm,
   isLocked,
   isAdmin,
+  hasMatchmaking,
 }: MeetingActionsProps) {
   const [isJoinPending, startJoinTransition] = useTransition();
   const [isLeavePending, startLeaveTransition] = useTransition();
@@ -122,9 +124,9 @@ export default function MeetingActions({
     
             <button
               onClick={handleLeave}
-              disabled={isLeavePending || isConfirmPending || isLocked}
+              disabled={isLeavePending || isConfirmPending || isLocked || hasMatchmaking}
               className="flex-1 bg-red-100 text-red-700 font-bold py-2 px-4 rounded hover:bg-red-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              title={isLocked ? "No puedes salir, el partido está confirmado y comienza en breve." : ""}
+              title={isLocked || hasMatchmaking ? "No puedes salir, el partido está confirmado y comienza en breve." : ""}
             >
               {isLeavePending ? "Saliendo..." : "Salir del Partido"}
             </button>

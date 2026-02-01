@@ -119,12 +119,12 @@ describe('Scheduler Service', () => {
        // The code calls count -> findMany (take remainder) -> updateMany -> generateMatches
        
        // Setup specific findMany response for truncation
-       vi.mocked(prisma.participation.findMany).mockImplementation(async (args: any) => {
+       vi.mocked(prisma.participation.findMany).mockImplementation((async (args: any) => {
            if (args?.take === 1) { // 5 % 4 = 1
                return pToRemove as any; 
            }
            return [] as any;
-       });
+       }) as any);
 
         await processMeetingsFinalization();
 

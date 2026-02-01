@@ -192,7 +192,7 @@ export default function Navbar() {
               </Menu>
             </Box>
           ) : (
-            <Box sx={{ flexGrow: 0 }}>
+            <Box sx={{ flexGrow: 0 }} className="flex">
                 <Button color="inherit" component={Link} href="/auth/login">Iniciar sesión</Button>
                 <Button color="inherit" component={Link} href="/auth/register">Registrarse</Button>
             </Box>

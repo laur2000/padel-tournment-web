@@ -15,6 +15,7 @@ model User {
   image          String?
   hashedPassword String?
   is_admin       Boolean   @default(false)
+  isGuest        Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

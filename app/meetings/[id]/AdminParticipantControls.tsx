@@ -13,12 +13,14 @@ interface AdminParticipantControlsProps {
   isConfirmed: boolean;
   userName: string;
   showConfirm?: boolean;
+  disabled?: boolean;
 }
 
-export default function AdminParticipantControls({ meetingId, userId, isConfirmed, userName, showConfirm = true }: AdminParticipantControlsProps) {
+export default function AdminParticipantControls({ meetingId, userId, isConfirmed, userName, showConfirm = true, disabled = false }: AdminParticipantControlsProps) {
   const [isPending, startTransition] = useTransition();
 
   const handleRemove = () => {
+    if (disabled) return;
     if (confirm(`¿Eliminar a ${userName}?`)) {
       startTransition(async () => {
         try {
@@ -62,7 +64,7 @@ export default function AdminParticipantControls({ meetingId, userId, isConfirme
             size="small" 
             color="error" 
             onClick={handleRemove}
-            disabled={isPending}
+            disabled={isPending || disabled}
         >
           <DeleteIcon fontSize="small" />
         </IconButton>

@@ -7,6 +7,7 @@ import { ParticipationStatus, TeamSide } from "@prisma/client";
 import Link from "next/link";
 import LocationToggle from "./LocationToggle";
 import AdminParticipantControls from "./AdminParticipantControls";
+import AdminAddPlayer from "./AdminAddPlayer";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -143,6 +144,7 @@ export default async function MeetingDetailPage(props: PageProps) {
                     canConfirm={canConfirm}
                     isLocked={isLocked}
                     isAdmin={session.user.is_admin}
+                    hasMatchmaking={!!meeting.matchmakingGeneratedAt}
                 />
                 {userStatus === "WAITLISTED" && (
                     <div className="mt-2 text-yellow-700 bg-yellow-50 p-3 rounded">
@@ -204,10 +206,11 @@ export default async function MeetingDetailPage(props: PageProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-            Jugadores Confirmados 
+            Jugadores apuntados 
             <span className="text-sm font-normal bg-green-100 text-green-800 px-2 py-1 rounded-full">
                 {joinedParticipants.length} / {meeting.numCourts * 4}
             </span>
+            {session?.user?.is_admin && <AdminAddPlayer meetingId={meeting.id} disabled={!!meeting.matchmakingGeneratedAt} />}
           </h3>
           <ul className="bg-white rounded-lg shadow divide-y">
             {joinedParticipants.length === 0 ? (
@@ -239,6 +242,7 @@ export default async function MeetingDetailPage(props: PageProps) {
                                     userId={p.userId}
                                     isConfirmed={!!p.confirmedAt}
                                     userName={p.user.name || "Usuario"}
+                                    disabled={!!meeting.matchmakingGeneratedAt}
                                 />
                             )}
                         </div>
@@ -272,6 +276,7 @@ export default async function MeetingDetailPage(props: PageProps) {
                             isConfirmed={false}
                             userName={p.user.name || "Usuario"}
                             showConfirm={false}
+                            disabled={!!meeting.matchmakingGeneratedAt}
                         />
                       )}
                     </li>
