@@ -7,13 +7,13 @@ export async function GET(req: NextRequest) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  // 1. Process Reminders
-  await processReminders();
-
-  // 2. Process Finalization (Auto-confirm, matchmake, notify)
+  // 1. Process Finalization (Auto-confirm, matchmake, notify)
   await processMeetingsFinalization();
 
+  // 2. Process Reminders
+  await processReminders();
+
   return NextResponse.json({
-    success: true
+    success: true,
   });
 }

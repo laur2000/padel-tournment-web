@@ -144,7 +144,7 @@ export default function MeetingActions({
                     disabled={isDeletePending}
                     className="w-full bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition disabled:opacity-50 text-sm uppercase tracking-wider"
                 >
-                    {isDeletePending ? "Eliminando..." : "Eliminar Partido (Admin)"}
+                    {isDeletePending ? "Eliminando..." : "Eliminar Partido"}
                 </button>
             </div>
         )}
