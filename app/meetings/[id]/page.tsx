@@ -6,6 +6,7 @@ import MeetingActions from "./MeetingActions";
 import { ParticipationStatus, TeamSide } from "@prisma/client";
 import Link from "next/link";
 import LocationToggle from "./LocationToggle";
+import AdminParticipantControls from "./AdminParticipantControls";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -226,7 +227,21 @@ export default async function MeetingDetailPage(props: PageProps) {
                              </div>
                              <span>{p.user.name || "Usuario"}</span>
                         </div>
-                        {p.confirmedAt && <span title="Confirmado">✅</span>}
+                        <div className="flex items-center">
+                            {p.confirmedAt && (
+                                <span className="mr-2 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded-full border border-green-200">
+                                    Confirmado
+                                </span>
+                            )}
+                            {session?.user?.is_admin && (
+                                <AdminParticipantControls 
+                                    meetingId={meeting.id}
+                                    userId={p.userId}
+                                    isConfirmed={!!p.confirmedAt}
+                                    userName={p.user.name || "Usuario"}
+                                />
+                            )}
+                        </div>
                     </li>
                 ))
             )}
@@ -245,9 +260,20 @@ export default async function MeetingDetailPage(props: PageProps) {
                 <li className="p-4 text-gray-500">Lista de espera vacía.</li>
              ) : (
                 waitlistedParticipants.map((p, idx) => (
-                    <li key={p.userId} className="p-4 flex items-center gap-3">
-                      <span className="text-gray-400 font-mono text-sm">#{idx + 1}</span>
-                      <span>{p.user.name || "Usuario"}</span>
+                    <li key={p.userId} className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-gray-400 font-mono text-sm">#{idx + 1}</span>
+                        <span>{p.user.name || "Usuario"}</span>
+                      </div>
+                      {session?.user?.is_admin && (
+                        <AdminParticipantControls 
+                            meetingId={meeting.id}
+                            userId={p.userId}
+                            isConfirmed={false}
+                            userName={p.user.name || "Usuario"}
+                            showConfirm={false}
+                        />
+                      )}
                     </li>
                 ))
              )}

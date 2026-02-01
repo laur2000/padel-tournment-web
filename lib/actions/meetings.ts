@@ -321,3 +321,131 @@ export async function confirmAttendance(meetingId: string) {
 
   revalidatePath(`/meetings/${meetingId}`);
 }
+
+export async function adminRemovePlayer(meetingId: string, userId: string) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user?.id || !session.user.is_admin) {
+    throw new Error("Unauthorized");
+  }
+
+  // We reuse logic similar to leaveMeeting but without time constraints for admins
+  // However, we still need to handle promotion if a JOINED player is removed.
+  
+  let promotionEmailData: {
+    email: string;
+    meetingId: string;
+    place: string;
+    startTime: Date;
+  } | null = null;
+
+  await prisma.$transaction(
+    async (tx) => {
+      // 0. Check meeting exists
+      const meeting = await tx.meeting.findUnique({ where: { id: meetingId } });
+      if (!meeting) throw new Error("Meeting not found");
+
+      // Note: we purposefully SKIP the "too late to leave" checks for admins.
+      // Admins should be able to kick players even last minute.
+      
+      const participation = await tx.participation.findUnique({
+        where: {
+          meetingId_userId: {
+            meetingId,
+            userId,
+          },
+        },
+      });
+
+      if (!participation || participation.status === ParticipationStatus.LEFT) {
+        return; // Nothing to do
+      }
+
+      const wasJoined = participation.status === ParticipationStatus.JOINED;
+
+      // 1. Mark user as REMOVED (or LEFT) - logic implies they are out.
+      // We'll use LEFT status but maybe add a note? For now std LEFT is fine.
+      await tx.participation.update({
+        where: { id: participation.id },
+        data: {
+          status: ParticipationStatus.LEFT,
+          leftAt: new Date(),
+          confirmedAt: null,
+          // We could add a 'removedBy' field if schema supported it, but it doesn't.
+        },
+      });
+
+      // 2. Promotion Logic (Same as leaveMeeting)
+      if (wasJoined) {
+        const firstWaitlisted = await tx.participation.findFirst({
+          where: {
+            meetingId,
+            status: ParticipationStatus.WAITLISTED,
+          },
+          orderBy: {
+            waitlistedAt: "asc",
+          },
+          include: { user: true },
+        });
+
+        if (firstWaitlisted) {
+          await tx.participation.update({
+            where: { id: firstWaitlisted.id },
+            data: {
+              status: ParticipationStatus.JOINED,
+              joinedAt: new Date(),
+              waitlistedAt: null,
+            },
+          });
+
+          if (firstWaitlisted.user.email) {
+             promotionEmailData = {
+                email: firstWaitlisted.user.email,
+                meetingId,
+                place: meeting.place,
+                startTime: meeting.startTime,
+              };
+          }
+        }
+      }
+    },
+    { isolationLevel: "Serializable" }
+  );
+
+  if (promotionEmailData) {
+    await sendWaitlistPromotionEmail(
+      // @ts-ignore
+      promotionEmailData.email,
+      // @ts-ignore
+      promotionEmailData.meetingId,
+      // @ts-ignore
+      promotionEmailData.place,
+      // @ts-ignore
+      promotionEmailData.startTime,
+    );
+  }
+
+  revalidatePath(`/meetings/${meetingId}`);
+  revalidatePath("/meetings");
+}
+
+export async function adminConfirmPlayer(meetingId: string, userId: string) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user?.id || !session.user.is_admin) {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.participation.updateMany({
+    where: {
+        meetingId,
+        userId,
+        status: ParticipationStatus.JOINED
+    },
+    data: {
+        confirmedAt: new Date()
+    }
+  });
+
+  revalidatePath(`/meetings/${meetingId}`);
+}
