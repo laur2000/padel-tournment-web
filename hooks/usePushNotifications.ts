@@ -67,11 +67,15 @@ export function usePushNotifications() {
 
     try {
       await subscription.unsubscribe();
-      setSubscription(null);
       
-      // Optional: Inform server to delete subscription
-      // await fetch("/api/web-push/unsubscribe", { ... }) 
+      // Inform server to delete subscription
+      await fetch("/api/web-push/unsubscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: subscription.endpoint }),
+      });
 
+      setSubscription(null);
       alert("Notificaciones desactivadas.");
     } catch (error) {
       console.error("Error unsubscribing", error);

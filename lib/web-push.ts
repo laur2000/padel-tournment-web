@@ -18,9 +18,11 @@ export async function sendPushNotification(
       },
       JSON.stringify(payload)
     );
-  } catch (error) {
+  } catch (error: any) {
+    if (error.statusCode === 410 || error.statusCode === 404) {
+      // 410 Gone, 404 Not Found -> Subscription invalid
+      throw error; 
+    }
     console.error('Error sending push notification', error);
-    // In a real app, you might want to delete invalid subscriptions here
-    // e.g. if error.statusCode === 410 (Gone)
   }
 }

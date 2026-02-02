@@ -10,18 +10,29 @@ export async function sendNotificationToUser(userId: string, payload: { title: s
     if (subscriptions.length === 0) return;
 
     await Promise.all(
-      subscriptions.map((sub) =>
-        sendPushNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: {
-              p256dh: sub.p256dh,
-              auth: sub.auth,
+      subscriptions.map(async (sub) => {
+        try {
+          await sendPushNotification(
+            {
+              endpoint: sub.endpoint,
+              keys: {
+                p256dh: sub.p256dh,
+                auth: sub.auth,
+              },
             },
-          },
-          payload
-        )
-      )
+            payload
+          );
+        } catch (error: any) {
+          if (error.statusCode === 410 || error.statusCode === 404) {
+            console.log(`Deleting invalid subscription for user ${userId}: ${sub.endpoint}`);
+            await prisma.pushSubscription.delete({
+              where: { endpoint: sub.endpoint },
+            });
+          } else {
+            console.error(`Error sending push to ${sub.endpoint}:`, error);
+          }
+        }
+      })
     );
   } catch (error) {
     console.error(`Error sending notification to user ${userId}:`, error);
