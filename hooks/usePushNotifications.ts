@@ -62,5 +62,22 @@ export function usePushNotifications() {
     }
   };
 
-  return { isSupported, permission, subscription, subscribeToNotifications };
+  const unsubscribeFromNotifications = async () => {
+    if (!subscription) return;
+
+    try {
+      await subscription.unsubscribe();
+      setSubscription(null);
+      
+      // Optional: Inform server to delete subscription
+      // await fetch("/api/web-push/unsubscribe", { ... }) 
+
+      alert("Notificaciones desactivadas.");
+    } catch (error) {
+      console.error("Error unsubscribing", error);
+      alert("Error al desactivar notificaciones.");
+    }
+  };
+
+  return { isSupported, permission, subscription, subscribeToNotifications, unsubscribeFromNotifications };
 }

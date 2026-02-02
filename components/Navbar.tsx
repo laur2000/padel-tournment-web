@@ -25,7 +25,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 export default function Navbar() {
   const { data: session } = useSession();
   const router = useRouter();
-  const { isSupported, permission, subscription, subscribeToNotifications } = usePushNotifications();
+  const { isSupported, permission, subscription, subscribeToNotifications, unsubscribeFromNotifications } = usePushNotifications();
 
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
@@ -173,8 +173,8 @@ export default function Navbar() {
                         </IconButton>
                      </Tooltip>
                   ) : (
-                    <Tooltip title="Notificaciones activas">
-                        <IconButton color="inherit">
+                    <Tooltip title="Notificaciones activas (Clic para desactivar)">
+                        <IconButton onClick={unsubscribeFromNotifications} color="inherit">
                             <NotificationsIcon />
                         </IconButton>
                     </Tooltip>
