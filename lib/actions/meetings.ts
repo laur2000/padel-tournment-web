@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ParticipationStatus, Meeting } from "@prisma/client";
 import { sendWaitlistPromotionEmail } from "@/lib/email";
+import { sendNotificationToUser } from "@/lib/notifications";
 
 export async function createMeeting(data: {
   place: string;
@@ -332,15 +333,16 @@ export async function adminRemovePlayer(meetingId: string, userId: string) {
   // We reuse logic similar to leaveMeeting but without time constraints for admins
   // However, we still need to handle promotion if a JOINED player is removed.
   
-  let promotionEmailData: {
-    email: string;
-    meetingId: string;
-    place: string;
-    startTime: Date;
-  } | null = null;
-
-  await prisma.$transaction(
+  const promotionData = await prisma.$transaction(
     async (tx) => {
+      let data: {
+        userId: string;
+        email: string | null;
+        meetingId: string;
+        place: string;
+        startTime: Date;
+      } | null = null;
+
       // 0. Check meeting exists
       const meeting = await tx.meeting.findUnique({ where: { id: meetingId } });
       if (!meeting) throw new Error("Meeting not found");
@@ -358,7 +360,7 @@ export async function adminRemovePlayer(meetingId: string, userId: string) {
       });
 
       if (!participation || participation.status === ParticipationStatus.LEFT) {
-        return; // Nothing to do
+        return null; // Nothing to do
       }
 
       const wasJoined = participation.status === ParticipationStatus.JOINED;
@@ -398,31 +400,36 @@ export async function adminRemovePlayer(meetingId: string, userId: string) {
             },
           });
 
-          if (firstWaitlisted.user.email) {
-             promotionEmailData = {
-                email: firstWaitlisted.user.email,
-                meetingId,
-                place: meeting.place,
-                startTime: meeting.startTime,
-              };
-          }
+         data = {
+            userId: firstWaitlisted.userId,
+            email: firstWaitlisted.user.email,
+            meetingId,
+            place: meeting.place,
+            startTime: meeting.startTime,
+            };
         }
       }
+      return data;
     },
     { isolationLevel: "Serializable" }
   );
 
-  if (promotionEmailData) {
-    await sendWaitlistPromotionEmail(
-      // @ts-ignore
-      promotionEmailData.email,
-      // @ts-ignore
-      promotionEmailData.meetingId,
-      // @ts-ignore
-      promotionEmailData.place,
-      // @ts-ignore
-      promotionEmailData.startTime,
-    );
+  if (promotionData) {
+    if (promotionData.email) {
+        await sendWaitlistPromotionEmail(
+        promotionData.email,
+        promotionData.meetingId,
+        promotionData.place,
+        promotionData.startTime,
+        );
+    }
+    
+    // Push Notification
+    await sendNotificationToUser(promotionData.userId, {
+        title: "¡Has entrado al partido!",
+        body: `Una plaza se ha liberado en ${promotionData.place}. Ahora estás dentro.`,
+        url: `/meetings/${promotionData.meetingId}`
+    });
   }
 
   revalidatePath(`/meetings/${meetingId}`);

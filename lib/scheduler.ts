@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { generateMatches } from "@/lib/matchmaking";
 import { ParticipationStatus, TeamSide } from "@prisma/client";
 import { sendReminderEmail, sendMatchmakingNotification } from "@/lib/email";
+import { sendNotificationToUser } from "@/lib/notifications";
 
 export async function processReminders() {
   const now = new Date();
@@ -35,6 +36,14 @@ export async function processReminders() {
           meeting.place,
           meeting.startTime,
         );
+
+        // Send Push Notification
+        await sendNotificationToUser(p.userId, {
+            title: "Recordatorio de Partido",
+            body: `Recuerda confirmar tu asistencia para el partido en ${meeting.place}`,
+            url: `/meetings/${meeting.id}`
+        });
+
         // Mark as sent
         await prisma.participation.update({
           where: { id: p.id },
@@ -180,6 +189,13 @@ export async function processMeetingsFinalization() {
             formattedMatches,
           );
         }
+        
+        // Send Push Notification
+        await sendNotificationToUser(p.userId, {
+            title: "¡Partidos Generados!",
+            body: `Los partidos para ${meeting.place} han sido organizados. Mira con quién juegas.`,
+            url: `/meetings/${meeting.id}`
+        });
       }
     } catch (error) {
       console.error(`Error processing meeting ${meeting.id}:`, error);

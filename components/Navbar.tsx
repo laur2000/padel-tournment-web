@@ -18,10 +18,14 @@ import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import SportsTennisIcon from '@mui/icons-material/SportsTennis';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 export default function Navbar() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { isSupported, permission, subscription, subscribeToNotifications } = usePushNotifications();
 
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
@@ -158,6 +162,25 @@ export default function Navbar() {
               </Button>
             )}
           </Box>
+
+            {/* NOTIFICATIONS ICON (If supported and logged in) */}
+            {session && isSupported && (
+               <Box sx={{ mr: 2 }}>
+                  {!subscription ? (
+                     <Tooltip title="Activar notificaciones">
+                        <IconButton onClick={subscribeToNotifications} color="inherit">
+                           <NotificationsOffIcon />
+                        </IconButton>
+                     </Tooltip>
+                  ) : (
+                    <Tooltip title="Notificaciones activas">
+                        <IconButton color="inherit">
+                            <NotificationsIcon />
+                        </IconButton>
+                    </Tooltip>
+                  )}
+               </Box>
+            )}
 
           {/* USER MENU */}
           {session ? (
