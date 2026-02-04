@@ -8,6 +8,8 @@ import Link from "next/link";
 import LocationToggle from "./LocationToggle";
 import AdminParticipantControls from "./AdminParticipantControls";
 import AdminAddPlayer from "./AdminAddPlayer";
+import UserAddGuest from "./UserAddGuest";
+import GuestControls from "./GuestControls";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -103,6 +105,9 @@ export default async function MeetingDetailPage(props: PageProps) {
   const isLocked = minutesUntilStart < 15 && minutesUntilStart > 0 && allConfirmed;
 
   const isConfirmed = !!userParticipation?.confirmedAt;
+
+  // Guest adding rule: Non-admin can add guest if < 72h and > 0h
+  const canAddGuest = !session?.user?.is_admin && session?.user && diffHours <= 72 && diffHours > 0;
 
   return (
     <div className="container mx-auto max-w-4xl">
@@ -211,12 +216,16 @@ export default async function MeetingDetailPage(props: PageProps) {
                 {joinedParticipants.length} / {meeting.numCourts * 4}
             </span>
             {session?.user?.is_admin && <AdminAddPlayer meetingId={meeting.id} disabled={!!meeting.matchmakingGeneratedAt} />}
+            {canAddGuest && <UserAddGuest meetingId={meeting.id} disabled={!!meeting.matchmakingGeneratedAt} />}
           </h3>
           <ul className="bg-white rounded-lg shadow divide-y">
             {joinedParticipants.length === 0 ? (
                 <li className="p-4 text-gray-500">Aún no hay jugadores apuntados.</li>
             ) : (
-                joinedParticipants.map((p) => (
+                joinedParticipants.map((p) => {
+                    const isMyGuest = session?.user?.id && p.addedByUserId === session.user.id;
+                    
+                    return (
                     <li key={p.userId} className="p-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -236,6 +245,8 @@ export default async function MeetingDetailPage(props: PageProps) {
                                     Confirmado
                                 </span>
                             )}
+                            
+                            {/* Admin Controls */}
                             {session?.user?.is_admin && (
                                 <AdminParticipantControls 
                                     meetingId={meeting.id}
@@ -245,9 +256,22 @@ export default async function MeetingDetailPage(props: PageProps) {
                                     disabled={!!meeting.matchmakingGeneratedAt}
                                 />
                             )}
+
+                            {/* Guest Controls for Creator */}
+                            {isMyGuest && !session?.user?.is_admin && (
+                                <GuestControls
+                                    meetingId={meeting.id}
+                                    guestUserId={p.userId}
+                                    isConfirmed={!!p.confirmedAt}
+                                    canConfirm={canConfirm}
+                                    userName={p.user.name || "Usuario"}
+                                    disabled={!!meeting.matchmakingGeneratedAt}
+                                />
+                            )}
                         </div>
                     </li>
-                ))
+                    );
+                })
             )}
           </ul>
         </div>

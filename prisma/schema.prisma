@@ -23,6 +23,7 @@ model User {
   sessions            Session[]
   passwordResetTokens PasswordResetToken[]
   participations      Participation[]
+  addedParticipations Participation[] @relation("AddedBy")
   matchTeams          MatchTeamMember[]
   pushSubscriptions   PushSubscription[]
 }
@@ -121,9 +122,11 @@ model Participation {
   removedAt    DateTime?
   confirmedAt  DateTime?
   reminderSent Boolean             @default(false)
+  addedByUserId String?
 
   meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addedByUser User? @relation("AddedBy", fields: [addedByUserId], references: [id])
 
   @@unique([meetingId, userId])
   @@index([meetingId, status])

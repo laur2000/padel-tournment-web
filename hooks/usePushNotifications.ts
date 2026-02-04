@@ -19,6 +19,8 @@ export function usePushNotifications() {
   const [isSupported, setIsSupported] = useState(false);
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
   const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [isLoading, setIsLoading] = useState(false);
+  const [feedback, setFeedback] = useState<{ message: string; severity: "success" | "error" } | null>(null);
 
   useEffect(() => {
     if ("serviceWorker" in navigator && "PushManager" in window) {
@@ -39,6 +41,7 @@ export function usePushNotifications() {
     if (!isSupported) return;
 
     try {
+      setIsLoading(true);
       const registration = await navigator.serviceWorker.ready;
       const sub = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -55,10 +58,12 @@ export function usePushNotifications() {
         body: JSON.stringify({ subscription: sub }),
       });
       
-      alert("Notificaciones activadas!");
+      setFeedback({ message: "Notificaciones activadas.", severity: "success" });
     } catch (error) {
       console.error("Error subscribing to push", error);
-      alert("Error al activar notificaciones. Verifica permisos.");
+      setFeedback({ message: "Error al activar notificaciones. Verifica permisos.", severity: "error" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -66,6 +71,7 @@ export function usePushNotifications() {
     if (!subscription) return;
 
     try {
+      setIsLoading(true);
       await subscription.unsubscribe();
       
       // Inform server to delete subscription
@@ -76,12 +82,25 @@ export function usePushNotifications() {
       });
 
       setSubscription(null);
-      alert("Notificaciones desactivadas.");
+      setFeedback({ message: "Notificaciones desactivadas.", severity: "success" });
     } catch (error) {
       console.error("Error unsubscribing", error);
-      alert("Error al desactivar notificaciones.");
+      setFeedback({ message: "Error al desactivar notificaciones.", severity: "error" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return { isSupported, permission, subscription, subscribeToNotifications, unsubscribeFromNotifications };
+  const dismissFeedback = () => setFeedback(null);
+
+  return {
+    isSupported,
+    permission,
+    subscription,
+    isLoading,
+    feedback,
+    dismissFeedback,
+    subscribeToNotifications,
+    unsubscribeFromNotifications,
+  };
 }

@@ -20,12 +20,23 @@ import MenuItem from '@mui/material/MenuItem';
 import SportsTennisIcon from '@mui/icons-material/SportsTennis';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 export default function Navbar() {
   const { data: session } = useSession();
   const router = useRouter();
-  const { isSupported, permission, subscription, subscribeToNotifications, unsubscribeFromNotifications } = usePushNotifications();
+  const {
+    isSupported,
+    permission,
+    subscription,
+    isLoading,
+    feedback,
+    dismissFeedback,
+    subscribeToNotifications,
+    unsubscribeFromNotifications,
+  } = usePushNotifications();
 
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
@@ -168,19 +179,32 @@ export default function Navbar() {
                <Box sx={{ mr: 2 }}>
                   {!subscription ? (
                      <Tooltip title="Activar notificaciones">
-                        <IconButton onClick={subscribeToNotifications} color="inherit">
+                        <IconButton onClick={subscribeToNotifications} color="inherit" disabled={isLoading}>
                            <NotificationsOffIcon />
                         </IconButton>
                      </Tooltip>
                   ) : (
                     <Tooltip title="Notificaciones activas (Clic para desactivar)">
-                        <IconButton onClick={unsubscribeFromNotifications} color="inherit">
+                        <IconButton onClick={unsubscribeFromNotifications} color="inherit" disabled={isLoading}>
                             <NotificationsIcon />
                         </IconButton>
                     </Tooltip>
                   )}
                </Box>
             )}
+
+            <Snackbar
+              open={Boolean(feedback)}
+              autoHideDuration={4000}
+              onClose={dismissFeedback}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+              {feedback ? (
+                <Alert onClose={dismissFeedback} severity={feedback.severity} variant="filled">
+                  {feedback.message}
+                </Alert>
+              ) : undefined}
+            </Snackbar>
 
           {/* USER MENU */}
           {session ? (
