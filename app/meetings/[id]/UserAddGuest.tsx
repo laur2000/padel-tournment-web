@@ -45,7 +45,7 @@ export default function UserAddGuest({ meetingId, disabled = false }: { meetingI
                 <DialogTitle>Añadir Invitado</DialogTitle>
                 <DialogContent>
                     <p className="text-sm text-gray-500 mb-4">
-                        Añade un usuario invitado. Recuerda que solo puedes hacerlo 72h antes del partido.
+                        Añade un usuario invitado.
                     </p>
                     <TextField 
                         autoFocus

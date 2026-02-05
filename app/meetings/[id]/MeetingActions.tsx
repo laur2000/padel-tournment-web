@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { joinMeeting, leaveMeeting, confirmAttendance, deleteMeeting } from "@/lib/actions/meetings";
 import { useRouter } from "next/navigation";
+import AdminGuestToggle from "./AdminGuestToggle";
 
 interface MeetingActionsProps {
   meetingId: string;
@@ -12,6 +13,7 @@ interface MeetingActionsProps {
   isLocked: boolean;
   isAdmin: boolean;
   hasMatchmaking: boolean;
+  allowGuests?: boolean;
 }
 
 export default function MeetingActions({
@@ -22,6 +24,7 @@ export default function MeetingActions({
   isLocked,
   isAdmin,
   hasMatchmaking,
+  allowGuests = false,
 }: MeetingActionsProps) {
   const [isJoinPending, startJoinTransition] = useTransition();
   const [isLeavePending, startLeaveTransition] = useTransition();
@@ -140,7 +143,9 @@ export default function MeetingActions({
         {renderUserActions()}
 
         {isAdmin && (
-            <div className="border-t pt-4 mt-4">
+            <div className="border-t pt-4 mt-4 space-y-4">
+                <AdminGuestToggle meetingId={meetingId} allowGuests={allowGuests} disabled={hasMatchmaking} />
+                
                 <button
                     onClick={handleDelete}
                     disabled={isDeletePending}

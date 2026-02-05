@@ -10,6 +10,7 @@ import AdminParticipantControls from "./AdminParticipantControls";
 import AdminAddPlayer from "./AdminAddPlayer";
 import UserAddGuest from "./UserAddGuest";
 import GuestControls from "./GuestControls";
+import AdminGuestToggle from "./AdminGuestToggle";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -106,9 +107,9 @@ export default async function MeetingDetailPage(props: PageProps) {
 
   const isConfirmed = !!userParticipation?.confirmedAt;
 
-  // Guest adding rule: Non-admin can add guest if < 72h and > 0h
-  const canAddGuest = !session?.user?.is_admin && session?.user && diffHours <= 72 && diffHours > 0;
-
+  // Guest adding rule: Non-admin can add guest if allowGuests is true
+  const canAddGuest = !session?.user?.is_admin && session?.user && meeting.allowGuests;
+  console.log(session)
   return (
     <div className="container mx-auto max-w-4xl">
       <div className="mb-6">
@@ -150,6 +151,7 @@ export default async function MeetingDetailPage(props: PageProps) {
                     isLocked={isLocked}
                     isAdmin={session.user.is_admin}
                     hasMatchmaking={!!meeting.matchmakingGeneratedAt}
+                    allowGuests={meeting.allowGuests}
                 />
                 {userStatus === "WAITLISTED" && (
                     <div className="mt-2 text-yellow-700 bg-yellow-50 p-3 rounded">
@@ -215,7 +217,11 @@ export default async function MeetingDetailPage(props: PageProps) {
             <span className="text-sm font-normal bg-green-100 text-green-800 px-2 py-1 rounded-full">
                 {joinedParticipants.length} / {meeting.numCourts * 4}
             </span>
-            {session?.user?.is_admin && <AdminAddPlayer meetingId={meeting.id} disabled={!!meeting.matchmakingGeneratedAt} />}
+            {session?.user?.is_admin && (
+                <>
+                    <AdminAddPlayer meetingId={meeting.id} disabled={!!meeting.matchmakingGeneratedAt} />
+                </>
+            )}
             {canAddGuest && <UserAddGuest meetingId={meeting.id} disabled={!!meeting.matchmakingGeneratedAt} />}
           </h3>
           <ul className="bg-white rounded-lg shadow divide-y">

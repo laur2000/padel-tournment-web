@@ -29,6 +29,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     user: {
       update: vi.fn(),
+      findUnique: vi.fn(),
     }
   },
 }));
@@ -61,6 +62,8 @@ describe('Actions: joinMeeting', () => {
     (getServerSession as any).mockResolvedValue({
       user: { id: mockUserId, is_admin: false },
     });
+    // Mock user existence check
+    (prisma.user.findUnique as any).mockResolvedValue({ id: mockUserId });
   });
 
   // ... (Existing joinMeeting tests remain unchanged) ...

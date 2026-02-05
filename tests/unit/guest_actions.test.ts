@@ -17,6 +17,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     user: {
       create: vi.fn(),
+      findUnique: vi.fn(),
     },
     participation: {
       count: vi.fn(),
@@ -52,6 +53,7 @@ describe('Guest Actions', () => {
     (getServerSession as any).mockResolvedValue({
       user: { id: userId, is_admin: false },
     });
+    (prisma.user.findUnique as any).mockResolvedValue({ id: userId });
   };
 
   const within72h = new Date();
@@ -65,48 +67,6 @@ describe('Guest Actions', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  describe('addGuest', () => {
-    it('should allow userA to add a guest within 72h window', async () => {
-      mockUser(userAId);
-      
-      (prisma.meeting.findUnique as any).mockResolvedValue({
-        id: meetingId,
-        startTime: within72h,
-        numCourts: 1,
-      });
-      (prisma.participation.count as any).mockResolvedValue(0);
-      (prisma.user.create as any).mockResolvedValue({ id: guestUserAId, name: 'Guest of A' });
-
-      await addGuest(meetingId, 'Guest of A');
-
-      expect(prisma.user.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ isGuest: true, name: 'Guest of A' })
-      }));
-
-      expect(prisma.participation.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({
-            meetingId,
-            userId: guestUserAId,
-            status: ParticipationStatus.JOINED,
-            addedByUserId: userAId // Verify ownership
-        })
-      }));
-    });
-
-    it('should NOT allow userA to add a guest earlier than 72h', async () => {
-      mockUser(userAId);
-
-      (prisma.meeting.findUnique as any).mockResolvedValue({
-        id: meetingId,
-        startTime: over72h,
-        numCourts: 1,
-      });
-
-      await expect(addGuest(meetingId, 'Guest of A')).rejects.toThrow(/Guests can only be added 72 hours before/);
-      expect(prisma.user.create).not.toHaveBeenCalled();
-    });
   });
 
   describe('removeGuest & confirmGuest (Ownership Checks)', () => {

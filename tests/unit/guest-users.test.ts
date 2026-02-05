@@ -26,6 +26,9 @@ vi.mock('@/lib/prisma', () => ({
     meeting: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
+    },
+    pushSubscription: {
+      findMany: vi.fn().mockResolvedValue([]),
     }
   },
 }));

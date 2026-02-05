@@ -50,7 +50,7 @@ export default function AdminParticipantControls({ meetingId, userId, isConfirme
         <Tooltip title="Confirmar asistencia manualmente">
           <IconButton 
             size="small" 
-            color="success" 
+            color="primary" 
             onClick={handleConfirm}
             disabled={isPending}
           >

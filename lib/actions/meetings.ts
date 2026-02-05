@@ -59,6 +59,11 @@ export async function joinMeeting(meetingId: string) {
   }
   const userId = session.user.id;
 
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new Error("Usuario no encontrado. Por favor, cierra sesión y vuelve a entrar.");
+  }
+
   // Transaction for concurrency safety
   const result = await prisma.$transaction(
     async (tx) => {
@@ -505,25 +510,46 @@ export async function adminAddPlayer(meetingId: string, data: { userId?: string;
   revalidatePath(`/meetings/${meetingId}`);
 }
 
+export async function setGuestsAllowed(meetingId: string, allowed: boolean) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user?.id || !session.user.is_admin) {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.meeting.update({
+    where: { id: meetingId },
+    data: { allowGuests: allowed }
+  });
+
+  revalidatePath(`/meetings/${meetingId}`);
+}
+
 export async function addGuest(meetingId: string, name: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     throw new Error("Unauthorized");
   }
 
+  // Verify the user actually exists in the database (handle stale sessions after DB reset)
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!user) {
+    throw new Error("Usuario no encontrado. Por favor, cierra sesión y vuelve a entrar.");
+  }
+
   const meeting = await prisma.meeting.findUnique({ where: { id: meetingId } });
-  if (!meeting) throw new Error("Meeting not found");
+  if (!meeting) throw new Error("Partido no encontrado");
 
   const now = new Date();
   const timeDiff = meeting.startTime.getTime() - now.getTime();
-  const hoursUntilStart = timeDiff / (1000 * 60 * 60);
-
-  // 72h rule: Only allowed if less than 72h AND match hasn't started
-  if (hoursUntilStart > 72) {
-    throw new Error("Guests can only be added 72 hours before the match");
+  
+  // Rule: Only allowed if allowGuests is true
+  if (!meeting.allowGuests) {
+     throw new Error("Añadir invitados no está permitido para este partido.");
   }
+
   if (timeDiff < 0) {
-    throw new Error("Cannot add guest to past meetings");
+    throw new Error("No se puede añadir invitados a partidos pasados");
   }
 
   // Transaction to manage guest creation and participation

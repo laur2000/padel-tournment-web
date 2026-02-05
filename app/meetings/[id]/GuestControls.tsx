@@ -51,7 +51,7 @@ export default function GuestControls({ meetingId, guestUserId, isConfirmed, can
             <span>
                 <IconButton 
                     onClick={handleConfirm} 
-                    color="success" 
+                    color="primary" 
                     disabled={disabled || isPending || !canConfirm}
                     size="small"
                 >
