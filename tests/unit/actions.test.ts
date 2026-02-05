@@ -17,6 +17,7 @@ vi.mock('@/lib/prisma', () => ({
       create: vi.fn(),
       delete: vi.fn(),
       deleteMany: vi.fn(), 
+      update: vi.fn(),
     },
     participation: {
       count: vi.fn(),
@@ -48,7 +49,7 @@ vi.mock('next/navigation', () => ({
 
 // Import mock to set implementation
 import { getServerSession } from 'next-auth';
-import { createMeeting, deleteMeeting, leaveMeeting, confirmAttendance } from '@/lib/actions/meetings';
+import { createMeeting, deleteMeeting, updateMeeting, leaveMeeting, confirmAttendance } from '@/lib/actions/meetings';
 import { sendWaitlistPromotionEmail } from '@/lib/email';
 
 describe('Actions: joinMeeting', () => {
@@ -289,6 +290,10 @@ describe('Actions: Admin', () => {
     const mockUserId = 'admin-123';
     const mockMeetingId = 'meeting-123';
 
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
     it('should allow admin to create meeting', async () => {
         (getServerSession as any).mockResolvedValue({
              user: { id: mockUserId, is_admin: true } 
@@ -323,6 +328,43 @@ describe('Actions: Admin', () => {
         await deleteMeeting(mockMeetingId);
 
         expect(prisma.meeting.delete).toHaveBeenCalledWith({ where: { id: mockMeetingId } });
+    });
+
+    describe('updateMeeting', () => {
+        it('should allow admin to update meeting', async () => {
+            (getServerSession as any).mockResolvedValue({
+                 user: { id: mockUserId, is_admin: true } 
+            });
+    
+            const updateData = {
+                place: 'Updated Court',
+                startTime: new Date('2024-01-02T10:00:00Z'),
+                numCourts: 2,
+                latitude: 40.0,
+                longitude: 2.0
+            };
+    
+            await updateMeeting(mockMeetingId, updateData);
+    
+            expect(prisma.meeting.update).toHaveBeenCalledWith({
+                where: { id: mockMeetingId },
+                data: expect.objectContaining(updateData)
+            });
+        });
+    
+        it('should prevent non-admin from updating meeting', async () => {
+            (getServerSession as any).mockResolvedValue({
+                user: { id: 'user-123', is_admin: false } 
+           });
+    
+           await expect(updateMeeting(mockMeetingId, {
+            place: 'Updated Court',
+            startTime: new Date(),
+            numCourts: 2
+        })).rejects.toThrow('Unauthorized');
+    
+           expect(prisma.meeting.update).not.toHaveBeenCalled();
+        });
     });
 });
 

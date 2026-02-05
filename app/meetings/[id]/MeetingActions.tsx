@@ -146,13 +146,22 @@ export default function MeetingActions({
             <div className="border-t pt-4 mt-4 space-y-4">
                 <AdminGuestToggle meetingId={meetingId} allowGuests={allowGuests} disabled={hasMatchmaking} />
                 
-                <button
-                    onClick={handleDelete}
-                    disabled={isDeletePending}
-                    className="w-full bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition disabled:opacity-50 text-sm uppercase tracking-wider"
-                >
-                    {isDeletePending ? "Eliminando..." : "Eliminar Partido"}
-                </button>
+                <div className="flex flex-col md:flex-row gap-4">
+                    <button
+                         onClick={() => router.push(`/admin/meetings/${meetingId}/edit`)}
+                         disabled={hasMatchmaking || isDeletePending}
+                         className="flex-1 bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded hover:bg-blue-200 transition disabled:opacity-50 text-sm uppercase tracking-wider"
+                    >
+                        Editar Partido
+                    </button>
+                    <button
+                        onClick={handleDelete}
+                        disabled={isDeletePending}
+                        className="flex-1 bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition disabled:opacity-50 text-sm uppercase tracking-wider"
+                    >
+                        {isDeletePending ? "Eliminando..." : "Eliminar Partido"}
+                    </button>
+                </div>
             </div>
         )}
     </div>

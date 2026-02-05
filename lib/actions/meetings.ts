@@ -37,6 +37,35 @@ export async function createMeeting(data: {
   redirect("/meetings");
 }
 
+export async function updateMeeting(meetingId: string, data: {
+  place: string;
+  startTime: Date;
+  numCourts: number;
+  latitude?: number;
+  longitude?: number;
+}) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.is_admin) {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.meeting.update({
+    where: { id: meetingId },
+    data: {
+      place: data.place,
+      startTime: data.startTime,
+      numCourts: data.numCourts,
+      latitude: data.latitude,
+      longitude: data.longitude,
+    },
+  });
+
+  revalidatePath("/meetings");
+  revalidatePath(`/meetings/${meetingId}`);
+  redirect(`/meetings/${meetingId}`);
+}
+
 export async function deleteMeeting(meetingId: string) {
   const session = await getServerSession(authOptions);
 
