@@ -1,9 +1,10 @@
 "use client";
 
 import { useTransition } from "react";
-import { joinMeeting, leaveMeeting, confirmAttendance, deleteMeeting } from "@/lib/actions/meetings";
+import { joinMeeting, leaveMeeting, confirmAttendance } from "@/lib/actions/meetings";
 import { useRouter } from "next/navigation";
 import AdminGuestToggle from "./AdminGuestToggle";
+import AdminGenerateMatches from "./AdminGenerateMatches";
 
 interface MeetingActionsProps {
   meetingId: string;
@@ -29,7 +30,6 @@ export default function MeetingActions({
   const [isJoinPending, startJoinTransition] = useTransition();
   const [isLeavePending, startLeaveTransition] = useTransition();
   const [isConfirmPending, startConfirmTransition] = useTransition();
-  const [isDeletePending, startDeleteTransition] = useTransition();
   
   const router = useRouter();
 
@@ -63,18 +63,6 @@ export default function MeetingActions({
       }
     });
   };
-
-  const handleDelete = () => {
-    if (!confirm("¿ESTÁS SEGURO? Esto eliminará el partido permanentemente.")) return;
-    startDeleteTransition(async () => {
-        try {
-            await deleteMeeting(meetingId);
-        } catch(error: any) {
-            if (error.message === "NEXT_REDIRECT") return;
-            alert("Error al eliminar el partido");
-        }
-    });
-  }
 
   const renderUserActions = () => {
     if (userStatus === "NONE" || userStatus === "LEFT") {
@@ -145,23 +133,7 @@ export default function MeetingActions({
         {isAdmin && (
             <div className="border-t pt-4 mt-4 space-y-4">
                 <AdminGuestToggle meetingId={meetingId} allowGuests={allowGuests} disabled={hasMatchmaking} />
-                
-                <div className="flex flex-col md:flex-row gap-4">
-                    <button
-                         onClick={() => router.push(`/admin/meetings/${meetingId}/edit`)}
-                         disabled={hasMatchmaking || isDeletePending}
-                         className="flex-1 bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded hover:bg-blue-200 transition disabled:opacity-50 text-sm uppercase tracking-wider"
-                    >
-                        Editar Partido
-                    </button>
-                    <button
-                        onClick={handleDelete}
-                        disabled={isDeletePending}
-                        className="flex-1 bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition disabled:opacity-50 text-sm uppercase tracking-wider"
-                    >
-                        {isDeletePending ? "Eliminando..." : "Eliminar Partido"}
-                    </button>
-                </div>
+                <AdminGenerateMatches meetingId={meetingId} hasMatches={hasMatchmaking} />
             </div>
         )}
     </div>

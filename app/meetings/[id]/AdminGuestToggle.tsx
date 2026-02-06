@@ -24,10 +24,10 @@ export default function AdminGuestToggle({ meetingId, allowGuests, disabled = fa
             className={`w-full font-bold py-2 px-4 rounded transition disabled:opacity-50 text-sm uppercase tracking-wider ${
                 allowGuests 
                 ? "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-200" 
-                : "bg-indigo-100 text-indigo-900 hover:bg-indigo-200 border border-indigo-200"
+                : "w-full bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded hover:bg-blue-200 transition disabled:opacity-50 text-sm uppercase tracking-wider"
             }`}
         >
-            {isPending ? "Guardando..." : (allowGuests ? "Bloquear Invitados" : "Permitir Invitados")}
+            {isPending ? "Guardando..." : (allowGuests ? "Cerrar Invitados" : "Permitir Invitados")}
         </button>
     );
 }

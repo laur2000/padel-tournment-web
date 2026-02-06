@@ -11,6 +11,7 @@ import AdminAddPlayer from "./AdminAddPlayer";
 import UserAddGuest from "./UserAddGuest";
 import GuestControls from "./GuestControls";
 import AdminGuestToggle from "./AdminGuestToggle";
+import AdminHeaderActions from "./AdminHeaderActions";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -119,7 +120,12 @@ export default async function MeetingDetailPage(props: PageProps) {
       </div>
 
       <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h1 className="text-3xl font-bold mb-4">{meeting.place}</h1>
+        <div className="flex justify-between items-start mb-4">
+            <h1 className="text-3xl font-bold">{meeting.place}</h1>
+            {session?.user?.is_admin && (
+                <AdminHeaderActions meetingId={meeting.id} disabled={!!meeting.matchmakingGeneratedAt} />
+            )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 mb-6">
           <div>
             <p className="font-semibold">Fecha:</p>

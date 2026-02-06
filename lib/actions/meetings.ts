@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { ParticipationStatus, Meeting } from "@prisma/client";
 import { sendWaitlistPromotionEmail } from "@/lib/email";
 import { sendNotificationToUser } from "@/lib/notifications";
+import { generateMatches } from "@/lib/matchmaking";
 
 export async function createMeeting(data: {
   place: string;
@@ -79,6 +80,53 @@ export async function deleteMeeting(meetingId: string) {
 
   revalidatePath("/meetings");
   redirect("/meetings");
+}
+
+export async function triggerMatchmaking(meetingId: string) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.is_admin) {
+    throw new Error("Unauthorized");
+  }
+
+  // Transaction: Delete existing -> Generate new -> Update Timestamp
+  await prisma.$transaction(async (tx) => {
+     // 1. Delete existing matches and teams
+     await tx.match.deleteMany({
+        where: { meetingId }
+     });
+     
+     // 2. Clear generatedAt flag momentarily so we can reset it if we want, 
+     // or just rely on generateMatches helper. 
+     // However, generateMatches in lib/matchmaking.ts currently uses `prisma` directly.
+     // We need to be careful about transaction isolation if generateMatches doesn't accept a transaction client.
+     // Looking at lib/matchmaking.ts, it imports `prisma` from `@/lib/prisma`.
+     // Ideally, we should refactor generateMatches to accept a transaction client (tx).
+     // FOR NOW: I will call it outside the transaction or assume it's fine for this iteration 
+     // BUT: generateMatches logic does reads and writes.
+  });
+
+  // Since generateMatches relies on the global prisma client and has its own transaction logic inside,
+  // we cannot easily wrap it in another transaction without refactoring.
+  // STRATEGY: 
+  // 1. Delete existing matches (using global client or simple query)
+  // 2. Call generateMatches
+  // 3. Update meeting timestamp
+
+  await prisma.match.deleteMany({
+      where: { meetingId }
+  });
+
+  await generateMatches(meetingId);
+
+  await prisma.meeting.update({
+      where: { id: meetingId },
+      data: {
+          matchmakingGeneratedAt: new Date()
+      }
+  });
+
+  revalidatePath(`/meetings/${meetingId}`);
 }
 
 export async function joinMeeting(meetingId: string) {
